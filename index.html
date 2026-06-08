@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conexión ESP32 - Bluetooth</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-weight: bold;
+        }
+
+        .btn:hover {
+            background-color: #0056b3;
+        }
+
+        .btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        #status {
+            margin-top: 25px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #666;
+            padding: 10px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .success {
+            color: #155724 !important;
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            color: #721c24 !important;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h1>Conectar ESP32 vía BLE</h1>
+        <button id="connectBtn" class="btn">Conectar Bluetooth</button>
+        <div id="status">Dispositivo no conectado</div>
+    </div>
+
+    <script>
+        const connectBtn = document.getElementById('connectBtn');
+        const statusDiv = document.getElementById('status');
+
+        connectBtn.addEventListener('click', async () => {
+            statusDiv.textContent = "Buscando dispositivos...";
+            statusDiv.className = ""; // Limpiar clases previas
+
+            try {
+                // Solicita cualquier dispositivo que exponga servicios Bluetooth
+                // Nota: Puedes filtrar por el nombre de tu ESP32 usando: filters: [{ name: 'TuIdESP32' }]
+                const device = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true,
+                    optionalServices: ['generic_access'] // Requerido si no filtras por servicio específico
+                });
+
+                statusDiv.textContent = `Conectando a ${device.name || 'Dispositivo desconocido'}...`;
+
+                // Conecta al servidor GATT remoto
+                const server = await device.gatt.connect();
+
+                // Si llega aquí, la conexión fue exitosa
+                statusDiv.textContent = "Conexión exitosa";
+                statusDiv.className = "success";
+                
+                // Escuchar si el dispositivo se desconecta inesperadamente
+                device.addEventListener('gattserverdisconnected', () => {
+                    statusDiv.textContent = "Dispositivo desconectado";
+                    statusDiv.className = "error";
+                });
+
+            } catch (error) {
+                console.error("Error de conexión:", error);
+                statusDiv.textContent = "Error al conectar o búsqueda cancelada";
+                statusDiv.className = "error";
+            }
+        });
+    </script>
+</body>
+</html>
