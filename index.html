@@ -157,13 +157,13 @@
             display: flex; justify-content: space-between; align-items: center;
         }
         .log-header .log-title { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
-        #clearBtn {
+        #clearBtn, #fullLogBtn {
             font-size: 10px; background: none;
             border: 1px solid var(--border); border-radius: 4px;
             padding: 2px 8px; cursor: pointer; color: var(--text-muted);
             font-family: 'Courier New', monospace;
         }
-        #clearBtn:hover { border-color: var(--text-dim); color: var(--text-dim); }
+        #clearBtn:hover, #fullLogBtn:hover { border-color: var(--text-dim); color: var(--text-dim); }
 
         #rawLog {
             background: #0a120a;
@@ -247,6 +247,40 @@
         #rawLog::-webkit-scrollbar { width: 4px; }
         #rawLog::-webkit-scrollbar-track { background: transparent; }
         #rawLog::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+        /* Sensor timeout warning */
+        .sensor-timeout-bar {
+            display: none;
+            font-size: 11px; font-weight: 600;
+            padding: 7px 12px; border-radius: 6px;
+            background: #2a1616; color: var(--red);
+            border: 1px solid var(--red);
+            text-align: center;
+            animation: pulse-red 1.5s infinite;
+        }
+        .sensor-timeout-bar.visible { display: block; }
+
+        /* Sensor panel offline overlay */
+        .sensor-panel.offline .sensor-value { color: var(--text-muted) !important; }
+        .sensor-panel.offline .sensor-item  { border-color: var(--border) !important; animation: none !important; }
+
+        /* Full log modal */
+        #fullLogModal .modal-sheet { border-radius: 12px; margin: 16px; max-height: 85vh; }
+        #fullLogTextarea {
+            width: 100%; height: 320px;
+            background: #0a120a; color: var(--green-bright);
+            border: 1px solid var(--border); border-radius: 6px;
+            padding: 10px; font-family: 'Courier New', monospace;
+            font-size: 10px; line-height: 1.5; resize: none; outline: none;
+        }
+        .modal-btn-row { display: flex; gap: 8px; margin-top: 10px; }
+        .btn-copy {
+            flex: 1; padding: 10px; border-radius: 6px; cursor: pointer;
+            font-family: 'Courier New', monospace; font-size: 12px; font-weight: bold;
+            background: var(--green-dim); color: #fff; border: 1px solid var(--green);
+        }
+        .btn-copy:hover { background: #388e3c; }
+        .btn-copy.copied { background: #1b5e20; color: var(--green-bright); }
     </style>
 </head>
 <body>
@@ -266,7 +300,10 @@
     </div>
 
     <!-- Sensores en vivo -->
-    <div class="sensor-panel">
+    <div id="sensorTimeoutBar" class="sensor-timeout-bar">
+        ⚠ Sin datos del ESP32 — verificar conexión BLE o modo MONITOREO
+    </div>
+    <div class="sensor-panel" id="sensorPanel">
         <div class="sensor-item" id="s-temp">
             <div class="sensor-label">Temperatura</div>
             <div class="sensor-value" id="v-temp">--</div>
@@ -322,10 +359,26 @@
     <!-- Log crudo -->
     <div class="log-header">
         <span class="log-title">📡 log BLE</span>
-        <button id="clearBtn">limpiar</button>
+        <div style="display:flex;gap:6px;">
+            <button id="fullLogBtn">log completo</button>
+            <button id="clearBtn">limpiar</button>
+        </div>
     </div>
     <div id="rawLog"></div>
     <div id="contador">0 mensajes</div>
+</div>
+
+<!-- Modal log completo -->
+<div class="modal-overlay" id="fullLogModal">
+    <div class="modal-sheet" style="border-radius:12px;margin:16px;max-height:85vh;">
+        <div class="modal-title">📋 Log completo</div>
+        <div class="modal-sub" id="fullLogCount">0 entradas — listo para copiar</div>
+        <textarea id="fullLogTextarea" readonly spellcheck="false"></textarea>
+        <div class="modal-btn-row">
+            <button class="btn-copy" id="copyLogBtn">⎘ Copiar todo</button>
+            <button class="modal-close" id="fullLogClose" style="flex:0.6;margin-top:0;">Cerrar</button>
+        </div>
+    </div>
 </div>
 
 <!-- Modal de selección de perfil -->
@@ -365,6 +418,14 @@
     let recvMode = null;         // 'plants' | 'log' | null
     let lastSensor = {};         // últimos valores de sensores
 
+    // Timeout de sensores
+    const SENSOR_TIMEOUT_MS = 6000; // 3 intervalos de 2s sin datos = error
+    let lastSensorTimestamp = null;
+    let sensorTimeoutTimer = null;
+
+    // Log completo (raw entries)
+    let fullLogEntries = [];
+
     // --- UTILIDADES ---
     function ahora() {
         return new Date().toLocaleTimeString('es-PE', { hour12: false });
@@ -387,6 +448,9 @@
             msgCount++;
             contador.textContent = `${msgCount} mensajes`;
         }
+        // Guardar en log completo
+        const tag = tipo.toUpperCase().padEnd(6);
+        fullLogEntries.push(`[${ahora()}] [${tag}] ${prefix}${text}`);
     }
 
     function setStatus(text, cls = '') {
@@ -400,6 +464,32 @@
         getPlantsBtn.disabled  = !conn;
         getLogBtn.disabled     = !conn;
         selectProfileBtn.disabled = !conn;
+        if (!conn) stopSensorTimeout();
+    }
+
+    // --- TIMEOUT DE SENSORES ---
+    const sensorTimeoutBar = document.getElementById('sensorTimeoutBar');
+    const sensorPanel = document.getElementById('sensorPanel');
+
+    function resetSensorTimeout() {
+        lastSensorTimestamp = Date.now();
+        sensorTimeoutBar.classList.remove('visible');
+        sensorPanel.classList.remove('offline');
+        clearTimeout(sensorTimeoutTimer);
+        sensorTimeoutTimer = setTimeout(onSensorTimeout, SENSOR_TIMEOUT_MS);
+    }
+
+    function stopSensorTimeout() {
+        clearTimeout(sensorTimeoutTimer);
+        sensorTimeoutBar.classList.remove('visible');
+        sensorPanel.classList.remove('offline');
+        lastSensorTimestamp = null;
+    }
+
+    function onSensorTimeout() {
+        sensorTimeoutBar.classList.add('visible');
+        sensorPanel.classList.add('offline');
+        addLine('Sin datos del ESP32 — el dispositivo puede no estar en modo MONITOREO', 'error');
     }
 
     // --- PARSER DE LÍNEA CSV DE PLANTA ---
@@ -607,6 +697,7 @@
         if (text.startsWith('PLANT STATUS:')) {
             const s = parseSensorData(text);
             lastSensor = s;
+            resetSensorTimeout();
             updateSensorPanel(s);
             // Log resumido
             const parts = [];
@@ -644,7 +735,10 @@
 
             setStatus(`Conectado · ${device.name || 'Dispositivo'}`, 'conectado');
             addLine('Suscripción a notificaciones activa', 'sys');
+            addLine('Esperando datos de sensores (PLANT STATUS)...', 'sys');
             setConnected(true);
+            // Iniciar vigilancia: si en 6s no llegan datos de sensor, mostrar error
+            resetSensorTimeout();
 
             device.addEventListener('gattserverdisconnected', () => {
                 setStatus('Dispositivo desconectado', 'error');
@@ -679,7 +773,43 @@
     document.getElementById('clearBtn').addEventListener('click', () => {
         rawLog.innerHTML = '';
         msgCount = 0;
+        fullLogEntries = [];
         contador.textContent = '0 mensajes';
+    });
+
+    // --- LOG COMPLETO ---
+    const fullLogModal    = document.getElementById('fullLogModal');
+    const fullLogTextarea = document.getElementById('fullLogTextarea');
+    const fullLogCount    = document.getElementById('fullLogCount');
+    const copyLogBtn      = document.getElementById('copyLogBtn');
+
+    document.getElementById('fullLogBtn').addEventListener('click', () => {
+        const txt = fullLogEntries.join('\n');
+        fullLogTextarea.value = txt || '(sin entradas aún)';
+        fullLogCount.textContent = `${fullLogEntries.length} entradas — listo para copiar`;
+        fullLogModal.classList.add('open');
+        // Scroll al fondo para ver lo más reciente
+        setTimeout(() => { fullLogTextarea.scrollTop = fullLogTextarea.scrollHeight; }, 50);
+    });
+
+    document.getElementById('fullLogClose').addEventListener('click', () => fullLogModal.classList.remove('open'));
+    fullLogModal.addEventListener('click', e => { if (e.target === fullLogModal) fullLogModal.classList.remove('open'); });
+
+    copyLogBtn.addEventListener('click', async () => {
+        try {
+            await navigator.clipboard.writeText(fullLogTextarea.value);
+            copyLogBtn.textContent = '✔ Copiado!';
+            copyLogBtn.classList.add('copied');
+            setTimeout(() => {
+                copyLogBtn.textContent = '⎘ Copiar todo';
+                copyLogBtn.classList.remove('copied');
+            }, 2000);
+        } catch {
+            fullLogTextarea.select();
+            document.execCommand('copy');
+            copyLogBtn.textContent = '✔ Copiado!';
+            setTimeout(() => { copyLogBtn.textContent = '⎘ Copiar todo'; }, 2000);
+        }
     });
 </script>
 </body>
