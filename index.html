@@ -243,62 +243,6 @@
         }
         .sensor-item.alert { animation: pulse-red 1.5s infinite; }
 
-        /* Create profile modal */
-        .create-modal-sheet {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 12px 12px 0 0;
-            padding: 20px 16px 32px;
-            width: 100%; max-width: 500px;
-            max-height: 90vh; overflow-y: auto;
-        }
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 12px;
-        }
-        .form-group {
-            display: flex; flex-direction: column; gap: 4px;
-        }
-        .form-group.full-width { grid-column: 1 / -1; }
-        .form-label {
-            font-size: 9px; color: var(--text-muted);
-            text-transform: uppercase; letter-spacing: 1px;
-        }
-        .form-input {
-            background: var(--surface2); color: var(--text);
-            border: 1px solid var(--border); border-radius: 5px;
-            padding: 8px 10px; font-size: 13px;
-            font-family: 'Courier New', monospace; outline: none;
-            width: 100%;
-            -webkit-appearance: none;
-        }
-        .form-input:focus { border-color: var(--green-dim); }
-        .form-input.invalid { border-color: var(--red) !important; }
-        .form-input.valid   { border-color: var(--green-dim); }
-        .form-section-title {
-            font-size: 9px; color: var(--yellow);
-            text-transform: uppercase; letter-spacing: 1px;
-            grid-column: 1 / -1;
-            padding-top: 4px; border-top: 1px solid var(--border);
-        }
-        .validation-msg {
-            font-size: 10px; color: var(--red);
-            padding: 7px 10px; border-radius: 5px;
-            background: #2a1616; border: 1px solid var(--red);
-            display: none; margin-bottom: 10px;
-        }
-        .validation-msg.visible { display: block; }
-        .btn-send-profile {
-            width: 100%; padding: 12px; border-radius: 6px; cursor: pointer;
-            font-family: 'Courier New', monospace; font-size: 13px; font-weight: bold;
-            background: var(--green-dim); color: #fff; border: 1px solid var(--green);
-            margin-bottom: 8px; letter-spacing: 0.5px;
-        }
-        .btn-send-profile:hover { background: #388e3c; }
-        .btn-send-profile:disabled { opacity: 0.35; cursor: not-allowed; }
-
         /* Scrollbar */
         #rawLog::-webkit-scrollbar { width: 4px; }
         #rawLog::-webkit-scrollbar-track { background: transparent; }
@@ -410,7 +354,6 @@
     <!-- Acciones extra -->
     <div class="btn-row">
         <button id="getLogBtn" class="btn btn-cmd" disabled>↓ GET_LOG</button>
-        <button id="newProfileBtn" class="btn btn-profile" disabled>＋ Nuevo perfil</button>
     </div>
 
     <!-- Log crudo -->
@@ -448,77 +391,6 @@
     </div>
 </div>
 
-<!-- Modal crear perfil -->
-<div class="modal-overlay" id="createProfileModal">
-    <div class="create-modal-sheet">
-        <div class="modal-title">＋ Crear perfil de planta</div>
-        <div class="modal-sub">Todos los campos son obligatorios. Se enviará a la SD del ESP32.</div>
-
-        <div id="createValidationMsg" class="validation-msg"></div>
-
-        <div class="form-grid">
-            <!-- Identificación -->
-            <div class="form-section-title">Identificación</div>
-            <div class="form-group full-width">
-                <label class="form-label">Familia</label>
-                <input class="form-input" id="cf-familia" type="text" placeholder="Ej: Hortalizas" maxlength="20" autocomplete="off">
-            </div>
-            <div class="form-group full-width">
-                <label class="form-label">Subtipo / Variedad</label>
-                <input class="form-input" id="cf-subtipo" type="text" placeholder="Ej: Lechuga Romana" maxlength="20" autocomplete="off">
-            </div>
-
-            <!-- Temperatura -->
-            <div class="form-section-title">Temperatura (°C)</div>
-            <div class="form-group">
-                <label class="form-label">Temp. Máxima</label>
-                <input class="form-input" id="cf-tempMax" type="number" step="0.5" min="0" max="60" placeholder="30.0">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Temp. Mínima</label>
-                <input class="form-input" id="cf-tempMin" type="number" step="0.5" min="0" max="60" placeholder="15.0">
-            </div>
-
-            <!-- Humedad y pH -->
-            <div class="form-section-title">Humedad y pH</div>
-            <div class="form-group">
-                <label class="form-label">Humedad Mínima (%)</label>
-                <input class="form-input" id="cf-humMin" type="number" step="1" min="0" max="100" placeholder="40">
-            </div>
-            <div class="form-group">
-                <label class="form-label">pH Mínimo</label>
-                <input class="form-input" id="cf-phMin" type="number" step="0.1" min="0" max="14" placeholder="6.0">
-            </div>
-            <div class="form-group">
-                <label class="form-label">pH Máximo</label>
-                <input class="form-input" id="cf-phMax" type="number" step="0.1" min="0" max="14" placeholder="7.0">
-            </div>
-
-            <!-- Ciclo de vida -->
-            <div class="form-section-title">Ciclo de vida (días)</div>
-            <div class="form-group">
-                <label class="form-label">Germinación</label>
-                <input class="form-input" id="cf-germ" type="number" step="1" min="1" max="365" placeholder="7">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Crecimiento</label>
-                <input class="form-input" id="cf-crec" type="number" step="1" min="1" max="365" placeholder="30">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Floración</label>
-                <input class="form-input" id="cf-flor" type="number" step="1" min="1" max="365" placeholder="60">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Fin de ciclo</label>
-                <input class="form-input" id="cf-muerte" type="number" step="1" min="1" max="365" placeholder="90">
-            </div>
-        </div>
-
-        <button class="btn-send-profile" id="sendProfileBtn">⬆ Enviar a SD del ESP32</button>
-        <button class="modal-close" id="createProfileClose">Cancelar</button>
-    </div>
-</div>
-
 <script>
     const SERVICE_UUID        = '4fa2c730-18ed-46c0-a17f-1d1121d9c889';
     const CHARACTERISTIC_UUID = '6d68efe5-04b6-4a85-94c2-4c047a961e1b';
@@ -528,7 +400,6 @@
     const getPlantsBtn    = document.getElementById('getPlantsBtn');
     const getLogBtn       = document.getElementById('getLogBtn');
     const selectProfileBtn= document.getElementById('selectProfileBtn');
-    const newProfileBtn   = document.getElementById('newProfileBtn');
     const statusBar       = document.getElementById('statusBar');
     const rawLog          = document.getElementById('rawLog');
     const contador        = document.getElementById('contador');
@@ -593,7 +464,6 @@
         getPlantsBtn.disabled  = !conn;
         getLogBtn.disabled     = !conn;
         selectProfileBtn.disabled = !conn;
-        newProfileBtn.disabled    = !conn;
         if (!conn) stopSensorTimeout();
     }
 
@@ -786,19 +656,6 @@
 
     // --- PROCESADOR DE MENSAJES RECIBIDOS ---
     function handleMessage(text) {
-        // Respuesta del ESP32 al guardar perfil
-        if (text === 'SAVE_OK') {
-            addLine('Perfil guardado en SD correctamente ✓', 'sys');
-            document.getElementById('createProfileModal').classList.remove('open');
-            // Recargar lista de plantas automáticamente
-            enviarComando('GET_PLANTS');
-            return;
-        }
-        if (text.startsWith('SAVE_ERROR')) {
-            addLine('Error al guardar perfil en SD: ' + text, 'error');
-            return;
-        }
-
         // Inicio de archivo plantas
         if (text === 'START_FILE') {
             recvMode = 'plants';
@@ -913,152 +770,7 @@
     getPlantsBtn.addEventListener('click', () => enviarComando('GET_PLANTS'));
     getLogBtn.addEventListener('click',    () => enviarComando('GET_LOG'));
 
-    // --- MODAL CREAR PERFIL ---
-    const createProfileModal = document.getElementById('createProfileModal');
-    const sendProfileBtn     = document.getElementById('sendProfileBtn');
-    const createValidMsg     = document.getElementById('createValidationMsg');
-
-    const CF_FIELDS = [
-        { id: 'cf-familia',  label: 'Familia',         type: 'text'   },
-        { id: 'cf-subtipo',  label: 'Subtipo',          type: 'text'   },
-        { id: 'cf-tempMax',  label: 'Temp. Máxima',     type: 'number' },
-        { id: 'cf-tempMin',  label: 'Temp. Mínima',     type: 'number' },
-        { id: 'cf-humMin',   label: 'Humedad Mínima',   type: 'number' },
-        { id: 'cf-phMin',    label: 'pH Mínimo',        type: 'number' },
-        { id: 'cf-phMax',    label: 'pH Máximo',        type: 'number' },
-        { id: 'cf-germ',     label: 'Días Germinación', type: 'number' },
-        { id: 'cf-crec',     label: 'Días Crecimiento', type: 'number' },
-        { id: 'cf-flor',     label: 'Días Floración',   type: 'number' },
-        { id: 'cf-muerte',   label: 'Días Fin de ciclo',type: 'number' },
-    ];
-
-    function resetCreateForm() {
-        CF_FIELDS.forEach(f => {
-            const el = document.getElementById(f.id);
-            el.value = '';
-            el.classList.remove('invalid', 'valid');
-        });
-        createValidMsg.classList.remove('visible');
-        createValidMsg.textContent = '';
-    }
-
-    function validateCreateForm() {
-        const errors = [];
-        let allValid = true;
-
-        CF_FIELDS.forEach(f => {
-            const el = document.getElementById(f.id);
-            const val = el.value.trim();
-            let ok = true;
-
-            if (val === '') {
-                ok = false;
-                errors.push(`"${f.label}" es obligatorio`);
-            } else if (f.type === 'number') {
-                const n = parseFloat(val);
-                if (isNaN(n)) { ok = false; errors.push(`"${f.label}" debe ser un número`); }
-            } else {
-                // text: no commas allowed (would break CSV)
-                if (val.includes(',')) { ok = false; errors.push(`"${f.label}" no puede contener comas`); }
-            }
-
-            el.classList.toggle('invalid', !ok);
-            el.classList.toggle('valid', ok);
-            if (!ok) allValid = false;
-        });
-
-        // Cross-field logic
-        if (allValid) {
-            const tMax  = parseFloat(document.getElementById('cf-tempMax').value);
-            const tMin  = parseFloat(document.getElementById('cf-tempMin').value);
-            const phMin = parseFloat(document.getElementById('cf-phMin').value);
-            const phMax = parseFloat(document.getElementById('cf-phMax').value);
-            const germ  = parseInt(document.getElementById('cf-germ').value);
-            const crec  = parseInt(document.getElementById('cf-crec').value);
-            const flor  = parseInt(document.getElementById('cf-flor').value);
-            const muerte= parseInt(document.getElementById('cf-muerte').value);
-
-            if (tMin >= tMax) {
-                errors.push('Temp. Mínima debe ser menor que Temp. Máxima');
-                document.getElementById('cf-tempMin').classList.add('invalid');
-                document.getElementById('cf-tempMax').classList.add('invalid');
-                allValid = false;
-            }
-            if (phMin >= phMax) {
-                errors.push('pH Mínimo debe ser menor que pH Máximo');
-                document.getElementById('cf-phMin').classList.add('invalid');
-                document.getElementById('cf-phMax').classList.add('invalid');
-                allValid = false;
-            }
-            if (!(germ < crec && crec < flor && flor < muerte)) {
-                errors.push('Los días deben ser: Germinación < Crecimiento < Floración < Fin de ciclo');
-                ['cf-germ','cf-crec','cf-flor','cf-muerte'].forEach(id => document.getElementById(id).classList.add('invalid'));
-                allValid = false;
-            }
-        }
-
-        if (!allValid) {
-            createValidMsg.textContent = errors[0]; // mostrar primer error
-            createValidMsg.classList.add('visible');
-        } else {
-            createValidMsg.classList.remove('visible');
-        }
-        return allValid;
-    }
-
-    function buildProfileCSV() {
-        const v = id => document.getElementById(id).value.trim();
-        // Formato: Familia,Subtipo,tempMax,tempMin,humMin,phMin,phMax,diasGerm,diasCrec,diasFlor,diasMuerte
-        return [
-            v('cf-familia'),
-            v('cf-subtipo'),
-            parseFloat(v('cf-tempMax')).toFixed(1),
-            parseFloat(v('cf-tempMin')).toFixed(1),
-            parseInt(v('cf-humMin')),
-            parseFloat(v('cf-phMin')).toFixed(1),
-            parseFloat(v('cf-phMax')).toFixed(1),
-            parseInt(v('cf-germ')),
-            parseInt(v('cf-crec')),
-            parseInt(v('cf-flor')),
-            parseInt(v('cf-muerte')),
-        ].join(',');
-    }
-
-    newProfileBtn.addEventListener('click', () => {
-        resetCreateForm();
-        createProfileModal.classList.add('open');
-    });
-
-    document.getElementById('createProfileClose').addEventListener('click', () => {
-        createProfileModal.classList.remove('open');
-    });
-    createProfileModal.addEventListener('click', e => {
-        if (e.target === createProfileModal) createProfileModal.classList.remove('open');
-    });
-
-    // Limpiar error al escribir en cualquier campo
-    CF_FIELDS.forEach(f => {
-        document.getElementById(f.id).addEventListener('input', () => {
-            document.getElementById(f.id).classList.remove('invalid');
-            createValidMsg.classList.remove('visible');
-        });
-    });
-
-    sendProfileBtn.addEventListener('click', async () => {
-        if (!validateCreateForm()) return;
-        const csv = buildProfileCSV();
-        const cmd = 'SAVE_PLANT:' + csv;
-        addLine('Enviando perfil → ' + csv, 'sys');
-        sendProfileBtn.disabled = true;
-        sendProfileBtn.textContent = '⏳ Enviando...';
-        await enviarComando(cmd);
-        setTimeout(() => {
-            sendProfileBtn.disabled = false;
-            sendProfileBtn.textContent = '⬆ Enviar a SD del ESP32';
-        }, 3000);
-    });
-
-
+    document.getElementById('clearBtn').addEventListener('click', () => {
         rawLog.innerHTML = '';
         msgCount = 0;
         fullLogEntries = [];
